@@ -5,6 +5,7 @@ print("Loading data")
 opt<-read.table(file="opt.012", head=F)
 opt.names<-read.table(file="opt.012.indv", head=F)
 opt.loci<-read.table(file="opt.012.pos", head=F)
+samples<-read.table(file="out.samples",head=T, fill=T)
 
 #dim(opt)
 #dim(opt.names)
@@ -18,10 +19,8 @@ opt<-as.data.frame(t(opt[,2:dim(opt)[2]]))
 opt[opt==-1]<-NA
 #opt[1:7,1:7]
 
-tmp<-str_split_fixed(rownames(opt), "\\.", 3)
-colnames(tmp)<-c("Local", "Sample", "Lib")
-tmp<-tmp[which(tmp[,3]!="cat"),]
-tmp2<-table(tmp[,"Sample"])
+tmp<-samples[grep("cat",samples[,1], invert=T),]
+tmp2<-table(tmp[,2])
 dup.names<-names(tmp2[tmp2==2])
 out<-vector()
 geno.error<-data.frame(row.names = c("1","2","3","H1","H2","Het"))
