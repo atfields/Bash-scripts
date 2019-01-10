@@ -81,7 +81,7 @@ do
 echo "mapping $var $i$j$k $ref"
 
 #Mapping
-bwa mem $ref $var.R1.fq.gz $var.R2.fq.gz -L 20,5 -t $DELTA -a -M -T 10 -A $i -B $j -O $k -R "@RG\tID:$i\tSM:$i\tPL:Illumina" 2> $LOG/bwa.$var.$ref.$i$j$k.log | mawk '$6 !~/[2-9].[SH]/ && $6 !~ /[1-9][0-9].[SH]/' | samtools view -@$DELTA -q 1 -SbT $ref - > $BAM/$var.$ref.$i$j$k.bam 2>$LOG/$var.$ref.$i$j$k.bam.log
+bwa mem $ref $var.R1.fq.gz $var.R2.fq.gz -L 20,5 -t $DELTA -a -M -T 10 -A $i -B $j -O $k -R "@RG\tID:$i\tSM:$i\tPL:Illumina" 2> $LOG/bwa.$var.$ref.$i$j$k.log | mawk '$6 !~/[2-9].[SH]/ && $6 !~ /[1-9][0-9].[SH]/' | samtools view -@$DELTA -q 1 -SbT $ref - > $BAM/$var.$ref.$i.$j.$k.bam 2>$LOG/$var.$ref.$i.$j.$k.bam.log
 
 #Making Samfile
 samtools view $BAM/$var.$ref.$i.$j.$k.bam > $SAM/$var.$ref.$i.$j.$k.sam
@@ -97,18 +97,18 @@ paste -d "," part.1 part.2 part.3A part.3C part.3G part.3T part.4A part.4C part.
 echo -e "Ref_contig,start_bp,Map_Q,1st_CIGAR_#,Seq_A,Seq_C,Seq_G,Seq_T,Ref_A,Ref_C,Ref_G,Ref_T,Mismatch,Align_score" | cat - data.csv > $CSV/$var.$ref.$i.$j.$k.summary.csv
 
 #Making Bedfile
-samtools sort -@$DELTA $BAM/$var.$ref.$i$j$k.bam -o $BAM/$var.$ref.$i$j$k.bam
-samtools index $BAM/$var.$ref.$i$j$k.bam
+samtools sort -@$DELTA $BAM/$var.$ref.$i$j$k.bam -o $BAM/$var.$ref.$i.$j.$k.bam
+samtools index $BAM/$var.$ref.$i.$j.$k.bam
 wait
-bamToBed -i $BAM/$var.$ref.$i$j$k.bam | bedtools merge -i - > $BED/$var.$ref.$i$j$k.bed
+bamToBed -i $BAM/$var.$ref.$i.$j.$k.bam | bedtools merge -i - > $BED/$var.$ref.$i.$j.$k.bed
 
 echo "evaluating $var $i$j$k $ref"
 #Summarizing Reads mapped
 TOT=$(zgrep @ $var.R1.fq.gz| wc -l)
-QC=$(samtools flagstat $BAM/$var.$ref.$i$j$k.bam | grep total  | grep -E -o '[0-9]+' | head -1)
-MAP=$(samtools flagstat $BAM/$var.$ref.$i$j$k.bam | grep mapped | grep -E -o '[0-9]+' | head -1)
-PAIR=$(samtools flagstat $BAM/$var.$ref.$i$j$k.bam | grep properly | grep -E -o '[0-9]+' | head -1)
-Q=$(samtools view $BAM/$var.$ref.$i$j$k.bam | cut -f 5,5 | grep 60 - | wc -l)
+QC=$(samtools flagstat $BAM/$var.$ref.$i.$j.$k.bam | grep total  | grep -E -o '[0-9]+' | head -1)
+MAP=$(samtools flagstat $BAM/$var.$ref.$i.$j.$k.bam | grep mapped | grep -E -o '[0-9]+' | head -1)
+PAIR=$(samtools flagstat $BAM/$var.$ref.$i.$j.$k.bam | grep properly | grep -E -o '[0-9]+' | head -1)
+Q=$(samtools view $BAM/$var.$ref.$i.$j.$k.bam | cut -f 5,5 | grep 60 - | wc -l)
 echo "$i        $j      $k      $ref      $TOT    $QC     $MAP    $PAIR    $Q" >> $var.bwa_mapping_summary.txt
 
 #Coverage per contig
