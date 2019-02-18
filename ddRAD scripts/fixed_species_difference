@@ -1,0 +1,43 @@
+{bash}
+nano spinner.list
+vcfsamplenames Final.recode.vcf > indv.list
+grep -v -F -f spinner.list indv.list > bt.list
+vcftools --vcf Final.recode.vcf --out Final_bt --recode --recode-INFO-all --keep blacktips.list &
+vcftools --vcf Final.recode.vcf --out Final_sp --recode --recode-INFO-all --keep spinner.list &
+vcftools --vcf Final_bt.recode.vcf --out opt.bt --012 &
+vcftools --vcf Final_sp.recode.vcf --out opt.sp --012 &
+
+echo -e "Contig \t Pos" | cat - spinner.012.pos > tmp.pos
+awk '{for (i=1; i<=NF; i++)  {a[NR,i] = $i}} NF>p { p = NF } END {for(j=1; j<=p; j++) {str=a[1,j]; for(i=2; i<=NR; i++) {str=str" "a[i,j];} print str}}' spinner.012 > spinner.012.t
+paste tmp.pos spinner.012.t > spinner.012.tmp
+awk -v FS=" " '{delete a;for (i=3;i<=NF;i++) a[$i]++; if(length(a)==1){for(i in a){print $1,$2,i}}}' spinner.012.tmp | awk '$3==0 || $3==2 {print $0}' | sort -k1,1 -k2,2n > spinner.fixed
+
+echo -e "Contig \t Pos" | cat - blacktip.012.pos > tmp.pos
+awk '{for (i=1; i<=NF; i++)  {a[NR,i] = $i}} NF>p { p = NF } END {for(j=1; j<=p; j++) {str=a[1,j]; for(i=2; i<=NR; i++) {str=str" "a[i,j];} print str}}' blacktip.012 > blacktip.012.t
+paste tmp.pos blacktip.012.t > blacktip.012.tmp
+awk -v FS=" " '{delete a;for (i=3;i<=NF;i++) a[$i]++; if(length(a)==1){for(i in a){print $1,$2,i}}}' blacktip.012.tmp | awk '$3==0 || $3==2 {print $0}' | sort -k1,1 -k2,2n > blacktip.fixed
+
+rm tmp.pos spinner.012.tmp spinner.012.t blacktip.012.tmp blacktip.012.t
+
+{R}
+bt.dat<-read.table("blacktip.fixed", head=F)
+sp.dat<-read.table("spinner.fixed", head=F)
+
+head(bt.dat)
+head(sp.dat)
+
+dat<-merge(bt.dat,sp.dat,by=c("V1","V2"))
+
+dat$V4<-dat$V3.x-dat$V3.y
+length(which(dat$V4>0))
+dat2<-dat[which(dat$V4>0),]
+
+write.table(dat2[,1:2], "fixed_alleles.txt", quote=F, col.names=F, row.names=F)
+q("no")
+
+{bash}
+wc -l fixed_alleles.txt
+cut -f 1 -d " " fixed_alleles.txt | sort -u | wc -l
+
+
+
