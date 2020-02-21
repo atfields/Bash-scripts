@@ -1,0 +1,47 @@
+#!/bin/bash
+
+#Split data over multiple files
+split -d -l 267 GOM_grid_all_releaseFile group
+mkdir May1 May15 Jun1 Jun15 Jul1 Jul15 Aug1 Aug15 Sep1 Sep15 Oct1
+
+#Make new directories for the 
+cd May1
+cp -s ../locs/* .
+rm GOM_grid_all_releaseFile
+
+#Prepare the data directories
+for i in $(ls group*); do
+mkdir input_$i
+cp ../input/* input_$i/
+ln -s ../GOM_Polygons.txt input_$i/
+awk '{print $0, "2013", "5", "1", "0"}' $i > input_$i/release.file;
+mkdir expt_$i; ln -s ../../expt_getdata_GOM2013/nests expt_$i/
+done
+
+#Run the model on all of the locations
+for i in $(ls group*); do
+while [ $(squeue | grep afields | grep normal | awk '$5=="R" {print $0} $5=="PD" {print $0}' | wc -l) -ge 10 ]; do sleep 60; done;
+sbatch -J CMS_$i -o CMS_$i.out -e CMS_$i.err --export=FILE=$i $WORK/bin/slurm/CMS.slurm
+done
+
+#If some jobs did not complete, put the group # in the tmp file and then run this
+#cat tmp | while read i; do
+#while [ $(squeue | grep afields | grep normal | awk '$5=="R" {print $0} $5=="PD" {print $0}' | wc -l) -ge 10 ]; do sleep 60; done;
+#sbatch -J CMS_$i -o CMS_$i.out -e CMS_$i.err --export=FILE=$i $WORK/bin/slurm/CMS.slurm
+#done
+
+##If the gold node is free, jobs can be queued on the gold node
+#cat tmp | while read i; do
+#sbatch -J CMS_$i -o CMS_$i.out -e CMS_$i.err -p jgoldq --export=FILE=$i $WORK/bin/slurm/CMS.slurm
+#done
+
+#Move log files into a directory
+mkdir logs
+mv *.err *.out logs/
+
+#Combine all the con_files into 1
+for i in $(ls group*); do
+cd expt_$i/output
+cat con* > con_file
+cat con_file >> ../../con_file
+done
